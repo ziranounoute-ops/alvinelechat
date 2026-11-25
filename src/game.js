@@ -65,7 +65,7 @@
 
     ctx.save();
     if (player.facing < 0) {
-      ctx.translate(x * 2 + player.w, 0);
+      ctx.translate(x + player.w, 0);
       ctx.scale(-1, 1);
       drawCatPixels(0, y, stride, jumpPose, running);
     } else {
