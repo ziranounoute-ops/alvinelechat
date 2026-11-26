@@ -1,221 +1,222 @@
 (() => {
   "use strict";
 
-  // Petit moteur maison : rendu basse résolution, physique simple et animation à pas fixes.
-  const canvas = document.getElementById("game");
+  // ALVINE 2.5D — moteur maison : boucle fixe, physique, caméra et rendu multi-plans.
+  const canvas = document.querySelector("#game");
   const ctx = canvas.getContext("2d", { alpha: false });
-  const stateLabel = document.getElementById("state-label");
-  const W = canvas.width;
-  const H = canvas.height;
-  const FLOOR_Y = 218;
+  const stateLabel = document.querySelector("#state-label");
+  const W = canvas.width, H = canvas.height;
   const keys = new Set();
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const FIXED_STEP = 1 / 60;
+  const WORLD = { width: 2200, floorY: 354 };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
 
   ctx.imageSmoothingEnabled = false;
 
+  const sprite = new Image();
+  sprite.src = "assets/alvine.png";
+  let spriteReady = false;
+  sprite.onload = () => { spriteReady = true; };
+
   const player = {
-    x: 104, y: FLOOR_Y - 44, vx: 0, vy: 0,
-    w: 25, h: 44, facing: 1, grounded: true,
-    animTime: 0, state: "idle", coyote: 0
+    x: 120, y: WORLD.floorY - 64, vx: 0, vy: 0,
+    width: 48, height: 64, facing: 1, grounded: true,
+    jumpCount: 0, anim: 0, state: "idle"
   };
+  const camera = { x: 0 };
+  const particles = [];
+  let time = 0;
 
-  const palette = {
-    outline: "#29221d", dark: "#493126", brown: "#795039",
-    warm: "#a66e43", light: "#c18b58", cream: "#e5c99a",
-    stripe: "#30231e", pink: "#bd7770", eye: "#d6b94e",
-    groundTop: "#71834e", groundMid: "#596c3e", soil: "#594634",
-    soilDark: "#40352b", soilLight: "#806044"
-  };
+  function roundedRect(x,y,w,h,r,fill) {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.roundRect(x,y,w,h,r);
+    ctx.fill();
+  }
 
-  function rect(x, y, w, h, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  function drawSky() {
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"#5da7e8");
+    g.addColorStop(.58,"#a8d7e8");
+    g.addColorStop(1,"#d4e4cb");
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    // Lointains doux : reliefs atmosphériques en plusieurs plans.
+    function ridge(offset, base, amp, color, parallax, step) {
+      ctx.beginPath(); ctx.moveTo(0,H);
+      for (let x=0;x<=W+step;x+=step) {
+        const wx=x+camera.x*parallax;
+        const y=base+Math.sin(wx*.008)*amp+Math.sin(wx*.021)*amp*.34+Math.sin(wx*.003)*amp*.7;
+        ctx.lineTo(x,y);
+      }
+      ctx.lineTo(W,H); ctx.closePath(); ctx.fillStyle=color; ctx.fill();
+    }
+    ridge(0,188,23,"#8cb9bd",.12,12);
+    ridge(0,218,27,"#6f9c91",.22,10);
+    ridge(0,246,18,"#537d68",.34,8);
+
+    // Brume lumineuse qui donne de la profondeur sans encombrer la scène.
+    const mist=ctx.createLinearGradient(0,205,0,330);
+    mist.addColorStop(0,"rgba(230,244,226,0)");
+    mist.addColorStop(.65,"rgba(230,244,226,.25)");
+    mist.addColorStop(1,"rgba(230,244,226,0)");
+    ctx.fillStyle=mist; ctx.fillRect(0,190,W,150);
   }
 
   function drawGround() {
-    // Une seule bande de terre, avec une bordure herbeuse et des pixels de texture.
-    rect(0, FLOOR_Y, W, H - FLOOR_Y, palette.soil);
-    rect(0, FLOOR_Y, W, 4, "#394c36");
-    rect(0, FLOOR_Y, W, 2, palette.groundTop);
-    rect(0, FLOOR_Y + 4, W, 3, palette.groundMid);
+    const horizon = WORLD.floorY-camera.y;
+    const top = horizon;
+    // Ombre portée et tranche de terre : volumes lisibles, pas un simple trait.
+    const topGrad=ctx.createLinearGradient(0,top,0,top+18);
+    topGrad.addColorStop(0,"#a4c65e");
+    topGrad.addColorStop(.28,"#638b3e");
+    topGrad.addColorStop(1,"#46603a");
+    ctx.fillStyle=topGrad; ctx.fillRect(0,top,W,H-top);
 
-    for (let x = 3; x < W; x += 19) {
-      const n = (x * 17) % 11;
-      rect(x, FLOOR_Y + 9 + n, 5, 2, palette.soilLight);
-      rect(x + 8, FLOOR_Y + 22 + (n % 7), 3, 2, palette.soilDark);
-      if (x % 3 === 0) rect(x + 12, FLOOR_Y + 5, 2, 2, "#9a8056");
+    // Bande d'herbe supérieure, avec variation de lumière.
+    const grass=ctx.createLinearGradient(0,top-5,0,top+12);
+    grass.addColorStop(0,"#d1e978");
+    grass.addColorStop(.38,"#8fb84c");
+    grass.addColorStop(1,"#537a3d");
+    ctx.fillStyle=grass; ctx.fillRect(0,top-5,W,17);
+
+    // Motif irrégulier d'herbe, stable dans le monde pour éviter le scintillement.
+    for(let wx=Math.floor(camera.x/7)*7-20; wx<camera.x+W+30; wx+=7){
+      const sx=wx-camera.x;
+      const n=Math.abs(Math.sin(wx*12.9898)*43758.5453)%1;
+      const h=2+Math.floor(n*5);
+      ctx.fillStyle=n>.55?"#d5ed78":n>.25?"#9fc956":"#6e9844";
+      ctx.fillRect(Math.round(sx),Math.round(top-2-h),1,h+2);
+      if(n>.76){ctx.fillStyle="#e8f38a";ctx.fillRect(Math.round(sx+2),Math.round(top-4),2,1);}
     }
-    // Quelques brins courts, sans ajouter d'autre décor.
-    for (let x = 8; x < W; x += 37) {
-      rect(x, FLOOR_Y - 2, 1, 3, "#a0a765");
-      rect(x + 2, FLOOR_Y - 1, 1, 2, "#87975a");
+
+    // Terre stratifiée en facettes : profondeur 2.5D.
+    const soil=ctx.createLinearGradient(0,top+10,0,H);
+    soil.addColorStop(0,"#79513a"); soil.addColorStop(.35,"#684632"); soil.addColorStop(1,"#382f2a");
+    ctx.fillStyle=soil; ctx.fillRect(0,top+10,W,H-top-10);
+    for(let wx=Math.floor(camera.x/34)*34-34;wx<camera.x+W+40;wx+=34){
+      const sx=wx-camera.x;
+      const seed=Math.abs(Math.sin(wx*2.17)*1000)%1;
+      const yy=top+23+seed*44;
+      ctx.fillStyle=seed>.5?"#8b6042":"#513b30";
+      ctx.beginPath();
+      ctx.moveTo(sx,yy);ctx.lineTo(sx+12,yy-5);ctx.lineTo(sx+27,yy+3);ctx.lineTo(sx+21,yy+17);ctx.lineTo(sx+5,yy+15);ctx.closePath();ctx.fill();
+      ctx.fillStyle="rgba(220,157,94,.20)";
+      ctx.fillRect(sx+5,yy+2,8,2);
+      ctx.fillStyle="rgba(25,27,24,.23)";
+      ctx.fillRect(sx+17,yy+11,8,3);
     }
-    rect(0, H - 3, W, 3, "#332d27");
+    // Petites racines et strates de roche.
+    for(let wx=Math.floor(camera.x/83)*83;wx<camera.x+W+83;wx+=83){
+      const sx=wx-camera.x;
+      ctx.strokeStyle="rgba(40,39,29,.5)";ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(sx,top+14);ctx.lineTo(sx+4,top+29);ctx.lineTo(sx+1,top+38);ctx.stroke();
+      ctx.fillStyle="#9a704a";ctx.fillRect(sx+25,top+52,7,2);
+    }
+    ctx.fillStyle="#282b26";ctx.fillRect(0,H-3,W,3);
   }
 
-  function drawCat() {
-    const moving = Math.abs(player.vx) > 0.35 && player.grounded;
-    const running = Math.abs(player.vx) > 2.2;
-    const t = player.animTime;
-    const bob = player.grounded ? (moving ? Math.round(Math.sin(t * (running ? 0.34 : 0.23)) * 1.4) : Math.round(Math.sin(t * 0.075) * 0.5)) : 0;
-    const stride = moving ? Math.sin(t * (running ? 0.34 : 0.23)) : 0;
-    const jumpPose = !player.grounded;
-    const x = Math.round(player.x);
-    const y = Math.round(player.y + bob);
+  function addDust(x,y,count=5){
+    for(let i=0;i<count;i++) particles.push({x,y,vx:(Math.random()-.5)*1.2,vy:-Math.random()*1.1,life:.45,max:.45,size:1+Math.random()*2});
+  }
+  function drawParticles(dt){
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];p.life-=dt;p.x+=p.vx;p.y+=p.vy;p.vy+=.035;
+      if(p.life<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha=p.life/p.max;
+      ctx.fillStyle="#e4d39b";ctx.fillRect(Math.round(p.x-camera.x),Math.round(p.y),p.size,p.size);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  function drawPlayer() {
+    const sx=Math.round(player.x-camera.x);
+    const sy=Math.round(player.y);
+    const moving=player.grounded&&Math.abs(player.vx)>.25;
+    const frame=moving ? (Math.floor(player.anim/8)%2) : 0;
+    const bob=player.grounded&&!moving?Math.sin(time*2.1)*.7:0;
+    // Ombre douce au sol, étirée pendant le saut.
+    const shadowScale=player.grounded?1:clamp(1-(WORLD.floorY-(player.y+player.height))/150,.45,1);
+    ctx.globalAlpha=.25*shadowScale;
+    ctx.fillStyle="#1d2b25";ctx.beginPath();
+    ctx.ellipse(sx+24,WORLD.floorY+2,17*shadowScale,3*shadowScale,0,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
 
     ctx.save();
-    if (player.facing < 0) {
-      ctx.translate(x + player.w, 0);
-      ctx.scale(-1, 1);
-      drawCatPixels(0, y, stride, jumpPose, running);
+    if(player.facing<0){ctx.translate(sx+48,0);ctx.scale(-1,1);}
+    if(spriteReady){
+      ctx.drawImage(sprite,frame*48,0,48,64,0,Math.round(player.y+bob),48,64);
     } else {
-      drawCatPixels(x, y, stride, jumpPose, running);
+      // Repli temporaire le temps que l'image charge.
+      roundedRect(sx,player.y,42,58,8,"#795039");
     }
     ctx.restore();
   }
 
-  function drawCatPixels(x, y, stride, airborne, running) {
-    const legA = airborne ? -3 : Math.round(stride * (running ? 4 : 2));
-    const legB = airborne ? 2 : -legA;
-    const armA = airborne ? -3 : Math.round(-stride * 2);
-    const tailWave = Math.round(Math.sin(player.animTime * 0.09) * 2);
-
-    // Queue tigrée, silhouette sombre puis mèches brunes.
-    rect(x + 1, y + 19 + tailWave, 5, 3, palette.outline);
-    rect(x - 1, y + 16 + tailWave, 4, 3, palette.outline);
-    rect(x - 3, y + 13 + tailWave, 4, 4, palette.dark);
-    rect(x - 4, y + 10 + tailWave, 3, 4, palette.dark);
-    rect(x - 3, y + 8 + tailWave, 3, 3, palette.brown);
-    rect(x - 1, y + 7 + tailWave, 3, 3, palette.warm);
-
-    // Jambes : deux appuis distincts pour une vraie petite foulée.
-    rect(x + 7 + legA, y + 34, 5, 8, palette.outline);
-    rect(x + 8 + legA, y + 35, 3, 6, palette.brown);
-    rect(x + 5 + legA, y + 41, 8, 3, palette.outline);
-    rect(x + 6 + legA, y + 41, 6, 2, palette.dark);
-    rect(x + 17 + legB, y + 34, 5, 8, palette.outline);
-    rect(x + 18 + legB, y + 35, 3, 6, palette.warm);
-    rect(x + 16 + legB, y + 41, 8, 3, palette.outline);
-    rect(x + 17 + legB, y + 41, 6, 2, palette.brown);
-
-    // Corps debout, légèrement penché vers l'avant.
-    rect(x + 7, y + 17, 15, 19, palette.outline);
-    rect(x + 8, y + 18, 13, 16, palette.brown);
-    rect(x + 9, y + 20, 10, 12, palette.warm);
-    rect(x + 9, y + 30, 10, 4, palette.cream);
-    rect(x + 8, y + 22, 3, 9, palette.dark);
-    rect(x + 18, y + 20, 3, 10, palette.dark);
-    rect(x + 11, y + 18, 2, 4, palette.stripe);
-    rect(x + 16, y + 17, 2, 5, palette.stripe);
-    rect(x + 13, y + 23, 2, 4, palette.stripe);
-    rect(x + 19, y + 26, 2, 3, palette.stripe);
-
-    // Bras visibles, avec petites pattes ivoire.
-    rect(x + 5, y + 21 + armA, 4, 11, palette.outline);
-    rect(x + 6, y + 22 + armA, 2, 8, palette.warm);
-    rect(x + 5, y + 30 + armA, 5, 4, palette.outline);
-    rect(x + 6, y + 31 + armA, 3, 2, palette.cream);
-    rect(x + 20, y + 21 - armA, 4, 10, palette.outline);
-    rect(x + 21, y + 22 - armA, 2, 7, palette.brown);
-    rect(x + 20, y + 29 - armA, 5, 4, palette.outline);
-    rect(x + 21, y + 30 - armA, 3, 2, palette.cream);
-
-    // Tête, oreilles et joues.
-    rect(x + 7, y + 4, 16, 15, palette.outline);
-    rect(x + 6, y + 2, 6, 7, palette.outline);
-    rect(x + 18, y + 2, 6, 7, palette.outline);
-    rect(x + 8, y + 4, 4, 4, palette.brown);
-    rect(x + 19, y + 4, 4, 4, palette.warm);
-    rect(x + 8, y + 7, 14, 10, palette.brown);
-    rect(x + 9, y + 8, 12, 7, palette.warm);
-    rect(x + 8, y + 12, 4, 4, palette.cream);
-    rect(x + 17, y + 12, 5, 4, palette.cream);
-    // Rayures du front et des joues.
-    rect(x + 13, y + 7, 2, 4, palette.stripe);
-    rect(x + 17, y + 8, 2, 3, palette.stripe);
-    rect(x + 7, y + 10, 3, 2, palette.stripe);
-    rect(x + 20, y + 11, 3, 2, palette.stripe);
-    // Œil, nez et moustaches côté visible.
-    rect(x + 17, y + 10, 2, 2, palette.outline);
-    rect(x + 17, y + 10, 1, 1, palette.eye);
-    rect(x + 20, y + 13, 2, 1, palette.pink);
-    rect(x + 19, y + 14, 3, 1, palette.outline);
-    rect(x + 21, y + 15, 4, 1, palette.cream);
-    rect(x + 22, y + 13, 4, 1, palette.cream);
-
-    // Petite ombre au sol, plus courte lorsque le chat saute.
-    ctx.globalAlpha = airborne ? 0.16 : 0.27;
-    rect(x + 2, FLOOR_Y + 1, 25, 2, "#243128");
-    ctx.globalAlpha = 1;
-  }
-
-  function render() {
-    // Ciel uni : le premier prototype ne contient volontairement que le chat et le sol.
-    rect(0, 0, W, FLOOR_Y, "#9bc6c8");
-    rect(0, 0, W, 4, "#a9d0cf");
+  function render(dt) {
+    drawSky();
     drawGround();
-    drawCat();
+    drawParticles(dt);
+    drawPlayer();
+    // Lueur subtile sur la scène, sans filtre flou qui détruirait les pixels.
+    const glow=ctx.createRadialGradient(360,80,5,360,80,260);
+    glow.addColorStop(0,"rgba(255,244,194,.13)");
+    glow.addColorStop(1,"rgba(255,244,194,0)");
+    ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
   }
 
   function update(dt) {
-    const left = keys.has("ArrowLeft") || keys.has("KeyA");
-    const right = keys.has("ArrowRight") || keys.has("KeyD");
-    const direction = (right ? 1 : 0) - (left ? 1 : 0);
-    const target = direction * 1.75;
-    const acceleration = player.grounded ? 0.42 : 0.24;
+    const left=keys.has("ArrowLeft")||keys.has("KeyA");
+    const right=keys.has("ArrowRight")||keys.has("KeyD");
+    const dir=(right?1:0)-(left?1:0);
+    const speed=keys.has("ShiftLeft")||keys.has("ShiftRight")?3.4:2.25;
+    const target=dir*speed;
+    const accel=player.grounded?16:8;
+    player.vx=lerp(player.vx,target,Math.min(1,accel*dt));
+    if(!dir) player.vx*=Math.pow(player.grounded?.76:.96,dt*60);
+    if(Math.abs(player.vx)<.025)player.vx=0;
+    if(dir)player.facing=dir;
 
-    if (direction) {
-      player.vx += (target - player.vx) * Math.min(1, acceleration * dt);
-      player.facing = direction;
-    } else {
-      player.vx *= Math.pow(player.grounded ? 0.72 : 0.96, dt);
-      if (Math.abs(player.vx) < 0.04) player.vx = 0;
+    const wasGrounded=player.grounded;
+    player.vy+=19*dt;
+    player.x=clamp(player.x+player.vx*dt*60,0,WORLD.width-player.width);
+    player.y+=player.vy*dt*60;
+    player.grounded=false;
+    if(player.y+player.height>=WORLD.floorY){
+      player.y=WORLD.floorY-player.height;
+      if(!wasGrounded&&player.vy>2)addDust(player.x+24,WORLD.floorY-2,7);
+      player.vy=0;player.grounded=true;player.jumpCount=0;
     }
-
-    player.vy += 0.22 * dt;
-    player.x += player.vx * dt;
-    player.y += player.vy * dt;
-
-    player.x = clamp(player.x, 5, W - player.w - 5);
-    if (player.y + player.h >= FLOOR_Y) {
-      player.y = FLOOR_Y - player.h;
-      player.vy = 0;
-      player.grounded = true;
-    } else {
-      player.grounded = false;
-    }
-
-    player.animTime += dt;
-    player.state = !player.grounded ? "jump" : Math.abs(player.vx) > 0.35 ? "walk" : "idle";
-    stateLabel.textContent = player.state === "jump" ? "EN L'AIR" : player.state === "walk" ? "EN MARCHE" : "AU REPOS";
+    if(player.grounded&&Math.abs(player.vx)>.25)player.anim+=dt*60;
+    time+=dt;
+    camera.x=lerp(camera.x,clamp(player.x-W*.36,0,WORLD.width-W),Math.min(1,dt*5));
+    player.state=!player.grounded?"jump":Math.abs(player.vx)>.25?"walk":"idle";
+    stateLabel.textContent=player.state==="jump"?"SAUT":player.state==="walk"?"MARCHE":"REPOS";
   }
 
-  let previous = 0;
-  let accumulator = 0;
-  const STEP = 1000 / 60;
-  function frame(now) {
-    if (!previous) previous = now;
-    accumulator += Math.min(100, now - previous);
-    previous = now;
-    while (accumulator >= STEP) {
-      update(1);
-      accumulator -= STEP;
-    }
-    render();
-    requestAnimationFrame(frame);
+  let previous=0,accumulator=0;
+  function loop(now){
+    if(!previous)previous=now;
+    accumulator+=Math.min(.05,(now-previous)/1000);previous=now;
+    while(accumulator>=FIXED_STEP){update(FIXED_STEP);accumulator-=FIXED_STEP;}
+    render(accumulator);
+    requestAnimationFrame(loop);
   }
 
-  window.addEventListener("keydown", (event) => {
-    if (["ArrowLeft", "ArrowRight", "Space", "ArrowUp"].includes(event.code)) event.preventDefault();
-    keys.add(event.code);
-    if ((event.code === "Space" || event.code === "ArrowUp") && player.grounded) {
-      player.vy = -5.1;
-      player.grounded = false;
+  addEventListener("keydown",e=>{
+    if(["ArrowLeft","ArrowRight","ArrowUp","Space"].includes(e.code))e.preventDefault();
+    keys.add(e.code);
+    if((e.code==="Space"||e.code==="ArrowUp")&&player.jumpCount<2){
+      player.vy=player.jumpCount===0?-7.1:-6.2;
+      player.grounded=false;player.jumpCount++;
+      addDust(player.x+24,WORLD.floorY-2,4);
     }
   });
-  window.addEventListener("keyup", (event) => keys.delete(event.code));
-  window.addEventListener("blur", () => keys.clear());
+  addEventListener("keyup",e=>keys.delete(e.code));
+  addEventListener("blur",()=>keys.clear());
+  document.addEventListener("visibilitychange",()=>{if(document.hidden)keys.clear();});
 
-  render();
-  requestAnimationFrame(frame);
+  render(0);
+  requestAnimationFrame(loop);
 })();
