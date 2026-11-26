@@ -8,7 +8,7 @@
   const W = canvas.width, H = canvas.height;
   const keys = new Set();
   const FIXED_STEP = 1 / 60;
-  const WORLD = { width: 2200, floorY: 354 };
+  const WORLD = { width: 2200, floorY: 190 };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -52,20 +52,20 @@
       }
       ctx.lineTo(W,H); ctx.closePath(); ctx.fillStyle=color; ctx.fill();
     }
-    ridge(0,188,23,"#8cb9bd",.12,12);
-    ridge(0,218,27,"#6f9c91",.22,10);
-    ridge(0,246,18,"#537d68",.34,8);
+    ridge(0,92,16,"#8cb9bd",.12,12);
+    ridge(0,126,20,"#6f9c91",.22,10);
+    ridge(0,153,13,"#537d68",.34,8);
 
     // Brume lumineuse qui donne de la profondeur sans encombrer la scène.
-    const mist=ctx.createLinearGradient(0,205,0,330);
+    const mist=ctx.createLinearGradient(0,145,0,205);
     mist.addColorStop(0,"rgba(230,244,226,0)");
     mist.addColorStop(.65,"rgba(230,244,226,.25)");
     mist.addColorStop(1,"rgba(230,244,226,0)");
-    ctx.fillStyle=mist; ctx.fillRect(0,190,W,150);
+    ctx.fillStyle=mist; ctx.fillRect(0,145,W,65);
   }
 
   function drawGround() {
-    const horizon = WORLD.floorY-camera.y;
+    const horizon = WORLD.floorY;
     const top = horizon;
     // Ombre portée et tranche de terre : volumes lisibles, pas un simple trait.
     const topGrad=ctx.createLinearGradient(0,top,0,top+18);
