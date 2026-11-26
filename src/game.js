@@ -144,7 +144,7 @@
     ctx.globalAlpha=1;
 
     ctx.save();
-    if(player.facing<0){ctx.translate(sx+48,0);ctx.scale(-1,1);}
+    if(player.facing<0){ctx.translate(sx+48,0);ctx.scale(-1,1);} else {ctx.translate(sx,0);}
     if(spriteReady){
       ctx.drawImage(sprite,frame*48,0,48,64,0,Math.round(player.y+bob),48,64);
     } else {
