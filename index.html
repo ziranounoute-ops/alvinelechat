@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#9bc6c8">
-  <title>Alvine le Chat — Prototype</title>
+  <meta name="theme-color" content="#17251f">
+  <title>Alvine le Chat — Prototype 2.5D</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="game-shell">
     <header class="game-heading">
-      <p class="eyebrow">PROTOTYPE 01</p>
-      <h1>Alvine le Chat</h1>
-      <p class="subtitle">Les premiers pas, tout simplement.</p>
+      <div><p class="eyebrow">MOTEUR MAISON · PROTOTYPE 02</p><h1>Alvine le Chat</h1></div>
+      <p class="subtitle">Un premier pas dans un monde en relief.</p>
     </header>
     <section class="game-frame" aria-label="Jeu Alvine le Chat">
-      <canvas id="game" width="480" height="270" aria-label="Un chat tigré sur un sol, contrôlable au clavier"></canvas>
-      <div class="frame-caption"><span>UN PETIT MONDE À CONSTRUIRE</span><span id="state-label">AU REPOS</span></div>
+      <canvas id="game" width="480" height="270" aria-label="Alvine se déplace et saute sur un sol en relief"></canvas>
+      <div class="frame-caption"><span>PROFONDEUR · LUMIÈRE · PIXEL ART</span><span id="state-label">REPOS</span></div>
     </section>
     <footer class="controls">
-      <span><kbd>←</kbd> <kbd>→</kbd> ou <kbd>A</kbd> <kbd>D</kbd> <i>marcher</i></span>
+      <span><kbd>←</kbd><kbd>→</kbd> ou <kbd>A</kbd><kbd>D</kbd> <i>déplacer</i></span>
       <span><kbd>Espace</kbd> <i>sauter</i></span>
-      <span class="hint">Le chat suit tes mouvements.</span>
+      <span><kbd>Maj</kbd> <i>courir</i></span>
+      <span class="hint">Double saut disponible</span>
     </footer>
   </main>
   <script src="src/game.js"></script>
