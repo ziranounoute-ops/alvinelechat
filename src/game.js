@@ -15,9 +15,10 @@
   ctx.imageSmoothingEnabled = false;
 
   const sprite = new Image();
-  sprite.src = "assets/alvine.png";
+  sprite.src = "assets/alvine.svg";
   let spriteReady = false;
   sprite.onload = () => { spriteReady = true; };
+  sprite.onerror = () => { spriteReady = false; console.error("Impossible de charger assets/alvine.svg"); };
 
   const player = {
     x: 120, y: WORLD.floorY - 64, vx: 0, vy: 0,
@@ -130,11 +131,25 @@
     ctx.globalAlpha=1;
   }
 
-  function drawPlayer() {
+function drawFallbackCat(x,y) {
+    // Secours visible même si le fichier de sprite ne charge pas.
+    ctx.fillStyle="#30231e"; ctx.fillRect(x+14,y+7,22,18);
+    ctx.fillStyle="#a96b3d"; ctx.fillRect(x+12,y+11,25,15);
+    ctx.fillStyle="#30231e"; ctx.fillRect(x+13,y+4,7,9); ctx.fillRect(x+30,y+4,7,9);
+    ctx.fillStyle="#d9a06b"; ctx.fillRect(x+17,y+14,4,3); ctx.fillRect(x+29,y+14,4,3);
+    ctx.fillStyle="#20201b"; ctx.fillRect(x+19,y+15,2,3); ctx.fillRect(x+30,y+15,2,3);
+    ctx.fillStyle="#a96b3d"; ctx.fillRect(x+17,y+25,19,23); ctx.fillRect(x+12,y+28,7,14); ctx.fillRect(x+34,y+28,6,14);
+    ctx.fillStyle="#38251f"; ctx.fillRect(x+20,y+26,4,7); ctx.fillRect(x+29,y+31,4,6);
+    ctx.fillStyle="#a96b3d"; ctx.fillRect(x+18,y+47,7,12); ctx.fillRect(x+29,y+47,7,12);
+    ctx.fillStyle="#2b211e"; ctx.fillRect(x+15,y+58,11,4); ctx.fillRect(x+27,y+58,11,4);
+    ctx.fillStyle="#38251f"; ctx.fillRect(x+9,y+39,5,4); ctx.fillRect(x+6,y+34,4,7);
+  }
+
+    function drawPlayer() {
     const sx=Math.round(player.x-camera.x);
     const sy=Math.round(player.y);
     const moving=player.grounded&&Math.abs(player.vx)>.25;
-    const frame=moving ? (Math.floor(player.anim/8)%2) : 0;
+    const frame=0;
     const bob=player.grounded&&!moving?Math.sin(time*2.1)*.7:0;
     // Ombre douce au sol, étirée pendant le saut.
     const shadowScale=player.grounded?1:clamp(1-(WORLD.floorY-(player.y+player.height))/150,.45,1);
@@ -146,10 +161,10 @@
     ctx.save();
     if(player.facing<0){ctx.translate(sx+48,0);ctx.scale(-1,1);} else {ctx.translate(sx,0);}
     if(spriteReady){
-      ctx.drawImage(sprite,frame*48,0,48,64,0,Math.round(player.y+bob),48,64);
+      ctx.drawImage(sprite,0,0,48,64,0,Math.round(player.y+bob),48,64);
     } else {
       // Repli temporaire le temps que l'image charge.
-      roundedRect(sx,player.y,42,58,8,"#795039");
+      drawFallbackCat(sx, Math.round(player.y+bob));
     }
     ctx.restore();
   }
