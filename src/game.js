@@ -164,7 +164,7 @@ function drawFallbackCat(x,y) {
       ctx.drawImage(sprite,0,0,48,64,0,Math.round(player.y+bob),48,64);
     } else {
       // Repli temporaire le temps que l'image charge.
-      drawFallbackCat(sx, Math.round(player.y+bob));
+      drawFallbackCat(0, Math.round(player.y+bob));
     }
     ctx.restore();
   }
