@@ -71,10 +71,10 @@ func _draw() -> void:
 
 	# Tête, oreilles et masque tigré
 	draw_rect(Rect2(7, -39 - bob, 19, 17), Color("#493124"))
-	draw_rect(PackedVector2Array([
+	draw_colored_polygon(PackedVector2Array([
 		Vector2(9, -36 - bob), Vector2(10, -46 - bob), Vector2(16, -39 - bob)
 	]), Color("#493124"))
-	draw_rect(PackedVector2Array([
+	draw_colored_polygon(PackedVector2Array([
 		Vector2(20, -39 - bob), Vector2(25, -46 - bob), Vector2(26, -35 - bob)
 	]), Color("#493124"))
 	draw_rect(Rect2(10, -36 - bob, 4, 3), Color("#d5a17b"))
