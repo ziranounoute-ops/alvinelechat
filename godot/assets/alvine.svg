@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="64" viewBox="0 0 384 64" shape-rendering="crispEdges">
+<defs>
+ <g id="cat">
+  <!-- tail, curled high behind the body -->
+  <path d="M17 39H11V35H7V29H10V24H14V19H19V22H16V27H13V33H18V37H24V41H19Z" fill="#211914"/>
+  <path d="M10 28H14V33H10Z M15 21H19V25H15Z" fill="#99542d"/>
+  <!-- far legs -->
+  <path d="M35 42H42V51H39V57H32V54H35Z" fill="#38231a"/>
+  <path d="M57 42H64V51H61V57H54V54H57Z" fill="#38231a"/>
+  <path d="M34 52H41V57H33Z M56 52H63V57H55Z" fill="#d9b78c"/>
+  <!-- body silhouette -->
+  <path d="M20 27H30V23H43V25H56V28H65V33H70V43H65V48H27V45H20V40H17V32H20Z" fill="#2b1c16"/>
+  <path d="M23 29H31V26H44V28H57V31H65V37H67V43H60V46H29V43H23V39H20V33H23Z" fill="#98532f"/>
+  <!-- warm flank and shoulder -->
+  <path d="M29 30H43V28H55V32H61V39H56V43H44V41H32V43H25V37H28Z" fill="#b86d3d"/>
+  <path d="M46 31H57V35H61V41H54V44H47V40H43V35Z" fill="#d08a50"/>
+  <!-- tabby stripes -->
+  <path d="M27 29H32V34H28V38H24V33Z M37 27H42V32H39V37H34V33H37Z M48 29H52V34H49V39H45V34Z M57 32H62V36H58V40H54V36Z" fill="#281a15"/>
+  <path d="M30 38H34V42H30Z M40 37H44V41H40Z M51 39H55V43H51Z" fill="#3a2419"/>
+  <!-- cream chest -->
+  <path d="M62 30H69V33H73V39H70V45H65V41H61V36H64Z" fill="#f0d7b2"/>
+  <path d="M66 35H70V40H67V43H64V39Z" fill="#d5ad82"/>
+  <!-- head and ears -->
+  <path d="M62 10H67V5H72V9H78V6H83V12H87V24H84V30H78V33H67V30H62V25H59V16H62Z" fill="#241914"/>
+  <path d="M64 12H68V8H71V14H76V12H80V9H82V15H85V23H82V28H77V31H68V28H63V23H61V17H64Z" fill="#b66c3b"/>
+  <path d="M65 11H68V9H70V16H66Z M78 12H81V10H82V17H78Z" fill="#efb38c"/>
+  <path d="M63 18H67V22H63Z M78 17H83V21H78Z" fill="#2b1a14"/>
+  <path d="M68 20H73V23H68Z" fill="#f0d7b2"/>
+  <!-- face mask, eyes, nose, muzzle -->
+  <path d="M70 18H75V22H72V26H67V23H69Z M79 19H84V23H81V26H77V22Z" fill="#382119"/>
+  <rect x="70" y="20" width="4" height="4" fill="#b5d17b"/><rect x="80" y="20" width="4" height="4" fill="#b5d17b"/>
+  <rect x="72" y="20" width="1" height="4" fill="#171914"/><rect x="81" y="20" width="1" height="4" fill="#171914"/>
+  <path d="M73 25H80V29H75V28H71Z" fill="#f2dfc4"/>
+  <rect x="76" y="25" width="3" height="2" fill="#70403a"/>
+  <path d="M75 28H78V30H75Z" fill="#38221c"/>
+  <path d="M73 27H76V28H73Z M79 27H82V28H79Z" fill="#fff0d9"/>
+  <!-- whiskers -->
+  <path d="M68 27H61V28H68Z M80 28H88V29H80Z M68 29H62V30H68Z" fill="#eadbc4"/>
+  <!-- near legs: replaced by frame animation -->
+ </g>
+</defs>
+<!-- four distinct gait poses; same silhouette, feet alternate -->
+<g transform="translate(0 0)">
+ <use href="#cat"/>
+ <path d="M28 42H35V51H32V57H25V54H28Z" fill="#6f3b25"/><path d="M25 53H33V58H24Z" fill="#ead0a7"/>
+ <path d="M49 42H56V51H53V56H46V53H49Z" fill="#99552f"/><path d="M46 52H54V57H45Z" fill="#ead0a7"/>
+</g>
+<g transform="translate(96 0)">
+ <use href="#cat"/>
+ <path d="M28 42H35V49H39V54H35V58H27V55H30Z" fill="#99552f"/><path d="M26 54H35V58H25Z" fill="#ead0a7"/>
+ <path d="M49 42H56V48H53V54H59V57H51V54H46V50H49Z" fill="#6f3b25"/><path d="M51 54H60V58H50Z" fill="#ead0a7"/>
+</g>
+<g transform="translate(192 0)">
+ <use href="#cat"/>
+ <path d="M28 42H35V50H31V55H24V52H28Z" fill="#6f3b25"/><path d="M23 51H32V56H22Z" fill="#ead0a7"/>
+ <path d="M49 42H56V50H60V54H56V58H48V55H52Z" fill="#99552f"/><path d="M48 54H57V58H47Z" fill="#ead0a7"/>
+</g>
+<g transform="translate(288 0)">
+ <use href="#cat"/>
+ <path d="M28 42H35V49H32V55H26V58H21V55H24V51H28Z" fill="#99552f"/><path d="M20 54H29V58H19Z" fill="#ead0a7"/>
+ <path d="M49 42H56V49H53V53H48V57H42V54H46V50H49Z" fill="#6f3b25"/><path d="M41 53H50V58H40Z" fill="#ead0a7"/>
+</g>
+</svg>
